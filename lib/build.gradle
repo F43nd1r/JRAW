@@ -2,7 +2,6 @@ import net.dean.jraw.gradle.GitbookPush
 import net.dean.jraw.gradle.VersionCommitTask
 
 apply plugin: 'org.jetbrains.dokka'
-apply plugin: 'net.ltgt.apt-idea'
 apply plugin: 'com.jfrog.bintray'
 apply plugin: 'maven'
 
@@ -17,11 +16,11 @@ dependencies {
         exclude group: 'com.squareup.moshi'
     }
 
-    apt('com.ryanharter.auto.value:auto-value-moshi:0.4.5') {
+    annotationProcessor('com.ryanharter.auto.value:auto-value-moshi:0.4.5') {
         exclude group: 'com.squareup.moshi'
     }
-    apt moshi
-    apt "com.google.auto.value:auto-value:$autoValueVersion"
+    annotationProcessor moshi
+    annotationProcessor "com.google.auto.value:auto-value:$autoValueVersion"
 
     compileOnly "com.google.auto.value:auto-value:$autoValueVersion"
     compileOnly('com.ryanharter.auto.value:auto-value-moshi-annotations:0.4.5') {
@@ -130,10 +129,4 @@ if (!hasProperty("authorizeRelease") || property("authorizeRelease") != project.
     def val = hasProperty("authorizeRelease") ? property("authorizeRelease") : "(missing)"
     [release, createVersionTask, pushReleaseDocs, bintrayUpload]*.enabled = false
     println("Release disabled, expected property 'authorizeRelease' to equal ${project.version}, was ${val}")
-}
-
-kotlin {
-    experimental {
-        coroutines "enable"
-    }
 }
