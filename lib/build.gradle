@@ -45,9 +45,9 @@ sourceSets {
 
 dokka {
     moduleName = 'jraw'
-    jdkVersion = 7
+    jdkVersion = 8
     impliedPlatforms = ['JVM']
-    reportUndocumented = true
+    reportUndocumented = false
     outputFormat = 'javadoc'
     includes = ['packages.md']
 
@@ -84,7 +84,7 @@ jar {
 // also uses this to find which jars to upload on release.
 artifacts {
     archives sourcesJar
-    archives javadocJar
+    //archives javadocJar
 }
 
 bintray {
@@ -94,14 +94,13 @@ bintray {
         repo = 'maven'
         name = projectName
         licenses = ['MIT']
-        vcsUrl = 'https://github.com/mattbdean/JRAW.git'
+        vcsUrl = 'https://github.com/F43nd1r/JRAW.git'
         issueTrackerUrl = 'https://github.com/mattbdean/JRAW/issues'
-        githubRepo = 'mattbdean/JRAW'
+        githubRepo = 'f43nd1r/JRAW'
 
         version {
             name = project.version
             released = new Date()
-            vcsTag = "v${project.version}"
         }
     }
 

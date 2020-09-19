@@ -34,8 +34,8 @@ subprojects {
 
     sourceCompatibility = JavaVersion.VERSION_1_8
     targetCompatibility = JavaVersion.VERSION_1_8
-    group = 'net.dean.jraw'
-    version = '1.1.0'
+    group = 'com.faendir.jraw'
+    version = '1.2.0'
 
     repositories {
         jcenter()
