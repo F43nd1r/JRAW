@@ -62,6 +62,7 @@ jar {
 publishing {
     publications {
         maven(MavenPublication) {
+            artifactId = 'JRAW'
             from(components.findByName("java"))
 
             artifact(sourcesJar)
