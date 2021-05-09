@@ -2,8 +2,8 @@ import net.dean.jraw.gradle.GitbookPush
 import net.dean.jraw.gradle.VersionCommitTask
 
 apply plugin: 'org.jetbrains.dokka'
-apply plugin: 'com.jfrog.bintray'
-apply plugin: 'maven'
+apply plugin: 'maven-publish'
+apply plugin: 'signing'
 
 ext.projectName = 'JRAW'
 
@@ -43,29 +43,9 @@ sourceSets {
     }
 }
 
-dokka {
-    moduleName = 'jraw'
-    jdkVersion = 8
-    impliedPlatforms = ['JVM']
-    reportUndocumented = false
-    outputFormat = 'javadoc'
-    includes = ['packages.md']
-
-    linkMapping {
-        dir = file('src/main/kotlin')
-        url = 'https://github.com/mattbdean/JRAW/tree/master/lib/src/main/kotlin'
-        suffix = '#L'
-    }
-}
-
-// Don't build in Travis to reduce spam. Remove when dokka 0.9.16 comes out.
-if (System.getenv("TRAVIS")) {
-    dokka.enabled = false
-}
-
-task javadocJar(type: Jar, dependsOn: dokka) {
+task javadocJar(type: Jar, dependsOn: dokkaJavadoc) {
     classifier = 'javadoc'
-    from dokka.outputDirectory
+    from dokkaJavadoc
     baseName = projectName
 }
 
@@ -79,53 +59,44 @@ jar {
     baseName = projectName
 }
 
-// When JitPack builds, it runs the install task (from the maven plugin) to install all artifacts listed here to the
-// local repository. List the sources and Javadoc jar here to make it available to JitPack users. The bintrayUpload task
-// also uses this to find which jars to upload on release.
-artifacts {
-    archives sourcesJar
-    //archives javadocJar
-}
+publishing {
+    publications {
+        maven(MavenPublication) {
+            from(components.findByName("java"))
 
-bintray {
-    user = project.hasProperty("bintrayUser") ? bintrayUser : null
-    key = project.hasProperty("bintrayKey") ? bintrayKey : null
-    pkg {
-        repo = 'maven'
-        name = projectName
-        licenses = ['MIT']
-        vcsUrl = 'https://github.com/F43nd1r/JRAW.git'
-        issueTrackerUrl = 'https://github.com/mattbdean/JRAW/issues'
-        githubRepo = 'f43nd1r/JRAW'
+            artifact(sourcesJar)
+            artifact(javadocJar)
 
-        version {
-            name = project.version
-            released = new Date()
+            pom {
+                name.set("JRAW")
+                description.set("Java Reddit API Wrapper")
+                url.set("https://github.com/F43nd1r/JRAW")
+                scm {
+                    connection.set("scm:git:https://github.com/F43nd1r/JRAW.git")
+                    developerConnection.set("scm:git:git@github.com:F43nd1r/JRAW.git")
+                    url.set("https://github.com/F43nd1r/JRAW.git")
+                }
+                licenses {
+                    license {
+                        name.set("MIT")
+                        url.set("https://github.com/F43nd1r/JRAW/blob/master/LICENSE")
+                        distribution.set("repo")
+                    }
+                }
+                developers {
+                    developer {
+                        id.set("f43nd1r")
+                        name.set("Lukas Morawietz")
+                    }
+                }
+            }
         }
     }
-
-    // Upload sources, Javadoc, and the compiled jars
-    configurations = ['archives']
 }
 
-// Pushes any new changes to GitBook and creates a version tag for the new version
-task pushReleaseDocs(type: GitbookPush, dependsOn: [':docs:buildSite']) {
-    username project.hasProperty("gitbookUsername") ? gitbookUsername : null
-    password project.hasProperty("gitbookPassword") ? gitbookPassword : null
-    repository "https://git.gitbook.com/mattbdean/jraw.git"
-    compiledBookDir rootProject.project('docs').file("build/docs").absoluteFile
-    createVersionTag true
-}
-
-// Creates the commit for a new version of the library. Also updates metadata files
-task createVersionTask(type: VersionCommitTask, dependsOn: [':meta:update'])
-
-// The real power of this task comes from its dependencies
-task release(dependsOn: [clean, check, createVersionTask, pushReleaseDocs, bintrayUpload])
-
-if (!hasProperty("authorizeRelease") || property("authorizeRelease") != project.version) {
-    // Disable the release tasks unless authorizeRelease contains the correct string
-    def val = hasProperty("authorizeRelease") ? property("authorizeRelease") : "(missing)"
-    [release, createVersionTask, pushReleaseDocs, bintrayUpload]*.enabled = false
-    println("Release disabled, expected property 'authorizeRelease' to equal ${project.version}, was ${val}")
+signing {
+    def signingKey = project.findProperty("signingKey") as String ?: System.getenv("SIGNING_KEY")
+    def signingPassword = project.findProperty("signingPassword") as String ?: System.getenv("SIGNING_PASSWORD")
+    useInMemoryPgpKeys(signingKey, signingPassword)
+    sign(publishing.publications["maven"])
 }

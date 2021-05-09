@@ -1,26 +1,29 @@
 import java.util.stream.Collectors
 
 buildscript {
-    ext.kotlinVersion = '1.4.0'
-    ext.spekVersion = '1.1.5'
+    ext.kotlinVersion = '1.4.32'
+    ext.spekVersion = '1.2.1'
     ext.moshiVersion = '1.6.0'
     ext.autoValueVersion = '1.5.4'
-    ext.dokkaVersion = '0.9.17'
+    ext.dokkaVersion = '1.4.32'
     ext.okhttpVersion = '3.10.0'
 
     repositories {
         jcenter()
-        maven { url 'https://plugins.gradle.org/m2/' }
+        gradlePluginPortal()
     }
 
     dependencies {
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion"
         classpath 'org.junit.platform:junit-platform-gradle-plugin:1.0.0'
         classpath "org.jetbrains.dokka:dokka-gradle-plugin:${dokkaVersion}"
-        classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.8.0'
+        classpath("org.jetbrains.dokka:dokka-core:$dokkaVersion")
     }
 }
-
+plugins {
+    id("io.github.gradle-nexus.publish-plugin") version "1.0.0"
+}
+apply plugin: 'org.jetbrains.dokka'
 apply plugin: 'jacoco'
 
 repositories {
@@ -34,8 +37,6 @@ subprojects {
 
     sourceCompatibility = JavaVersion.VERSION_1_8
     targetCompatibility = JavaVersion.VERSION_1_8
-    group = 'com.faendir.jraw'
-    version = '1.2.0'
 
     repositories {
         jcenter()
@@ -109,5 +110,34 @@ task jacocoRootReport(type: JacocoReport) {
 
     onlyIf = {
         true
+    }
+}
+
+tasks.register("build") {
+    group = "build"
+}
+
+tasks.register("publish") {
+    group = "publishing"
+    subprojects {
+        def publish = tasks.findByName("publish")
+        if(publish != null) dependsOn(publish)
+        def publishToSonatype = tasks.findByName("publishToSonatype")
+        if(publishToSonatype != null) dependsOn(publishToSonatype)
+    }
+    dependsOn("closeAndReleaseSonatypeStagingRepository")
+}
+
+task clean(type: Delete) {
+    group = "build"
+    delete = buildDir
+}
+
+nexusPublishing {
+    repositories {
+        sonatype {
+            username.set(project.findProperty("ossrhUser") as String ?: System.getenv("OSSRH_USER"))
+            password.set(project.findProperty("ossrhPassword") as String ?: System.getenv("OSSRH_PASSWORD"))
+        }
     }
 }
